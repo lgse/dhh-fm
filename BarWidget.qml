@@ -11,7 +11,8 @@ BarWidget {
   readonly property var radioService: bar && bar.shell ? bar.shell.serviceFor("lgse.dhh-fm") : null
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
-  readonly property int activityLevel: Model.activityLevel(radioService ? radioService.stats.total : 0)
+  readonly property bool connected: radioService ? radioService.connected : false
+  readonly property int activityLevel: root.connected ? Model.activityLevel(radioService.stats.total) : 0
 
   function open() { if (panelLoader.item) panelLoader.item.open() }
   function close() { if (panelLoader.item) panelLoader.item.close() }
@@ -52,7 +53,17 @@ BarWidget {
       foreground: root.bar ? root.bar.foreground : "white"
       background: root.bar ? root.bar.background : "#151515"
       activityLevel: root.activityLevel
-      unreadCount: root.radioService ? root.radioService.unreadCount : 0
+      unreadCount: root.connected ? root.radioService.unreadCount : 0
+      visible: root.connected
+    }
+
+    Text {
+      anchors.centerIn: parent
+      visible: !root.connected
+      text: "󰌾"
+      color: root.bar ? root.bar.foreground : "white"
+      font.family: root.bar ? root.bar.fontFamily : "monospace"
+      font.pixelSize: Style.font.body
     }
 
     MouseArea {
@@ -65,11 +76,11 @@ BarWidget {
         else root.toggle()
       }
       onEntered: if (root.bar) {
-        var unread = root.radioService ? root.radioService.unreadCount : 0
-        root.bar.showTooltip(root, unread > 0
-          ? unread + (unread === 1 ? " unheard transmission" : " unheard transmissions")
-          : Model.statusLine(root.radioService ? root.radioService.stats : null,
-              root.radioService ? root.radioService.lastCreatedAt : ""))
+        var unread = root.connected ? root.radioService.unreadCount : 0
+        root.bar.showTooltip(root, !root.connected ? "Connect DHH FM"
+          : (unread > 0
+            ? unread + (unread === 1 ? " unheard transmission" : " unheard transmissions")
+            : Model.statusLine(root.radioService.stats, root.radioService.lastCreatedAt)))
       }
       onExited: if (root.bar) root.bar.hideTooltip(root)
     }

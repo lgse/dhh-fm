@@ -19,6 +19,7 @@ Panel {
   property double nowMs: Date.now()
 
   readonly property var barIdentity: hostWidget || root
+  readonly property bool connected: radioService ? radioService.connected : false
   readonly property var stats: radioService ? radioService.stats : ({})
   readonly property var posts: radioService ? radioService.posts : []
   readonly property var visiblePosts: Model.filteredPosts(posts, feedFilter)
@@ -41,16 +42,14 @@ Panel {
 
   function saveConfiguration() {
     if (!radioService) return
-    radioService.configure(setupSource, bearerInput.text, rssInput.text)
+    radioService.configure("x-api", bearerInput.text, "")
     bearerInput.text = ""
   }
 
   onOpenedChanged: {
     if (!opened || !radioService) return
     radioService.markSeen()
-    if (!radioService.configured) configEditorOpen = true
-    if (radioService.source === "x-api" || radioService.source === "rss" || radioService.source === "demo")
-      setupSource = radioService.source
+    if (!radioService.connected) configEditorOpen = true
   }
   onPostsChanged: {
     if (opened && radioService) radioService.markSeen()
@@ -96,6 +95,7 @@ Panel {
             background: Color.background
             activityLevel: root.activityLevel
             unreadCount: root.radioService ? root.radioService.unreadCount : 0
+            visible: root.connected
           }
 
           Column {
@@ -132,8 +132,9 @@ Panel {
 
             Text {
               width: parent.width
-              text: Model.statusLine(root.stats,
-                root.radioService ? root.radioService.lastCreatedAt : "", root.nowMs)
+              text: root.connected
+                ? Model.statusLine(root.stats, root.radioService ? root.radioService.lastCreatedAt : "", root.nowMs)
+                : "Connection required"
               color: Util.alpha(Color.foreground, 0.7)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.body
@@ -141,7 +142,7 @@ Panel {
             }
             Text {
               width: parent.width
-              text: "Always broadcasting · @dhh"
+              text: root.connected ? "Always broadcasting · @dhh" : "Authenticate before entering the station"
               color: Util.alpha(Color.foreground, 0.48)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
@@ -151,6 +152,7 @@ Panel {
 
           Rectangle {
             id: settingsButton
+            visible: root.connected
             anchors.verticalCenter: parent.verticalCenter
             width: Style.space(34)
             height: width
@@ -175,6 +177,7 @@ Panel {
 
           Rectangle {
             id: refreshButton
+            visible: root.connected
             anchors.verticalCenter: parent.verticalCenter
             width: Style.space(34)
             height: width
@@ -204,6 +207,7 @@ Panel {
 
         Grid {
           id: statsGrid
+          visible: root.connected
           width: parent.width
           columns: 4
           columnSpacing: Style.space(7)
@@ -276,7 +280,7 @@ Panel {
           color: Util.alpha(Color.foreground, 0.045)
           border.width: 1
           border.color: Util.alpha(Color.foreground, 0.12)
-          visible: root.configEditorOpen
+          visible: !root.connected || root.configEditorOpen
 
           Column {
             id: configContent
@@ -286,7 +290,7 @@ Panel {
             spacing: Style.space(9)
 
             Text {
-              text: "Tune the station"
+              text: root.connected ? "Replace API connection" : "Connect DHH FM"
               color: Color.foreground
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.body
@@ -295,7 +299,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "Choose a source. Credentials stay in a private local file and are never passed on the command line."
+              text: "Paste a valid OAuth 2.0 app-only bearer token. DHH FM validates it before unlocking the feed. The token stays in a private local file and is never passed on the command line."
               color: Util.alpha(Color.foreground, 0.62)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
@@ -303,12 +307,11 @@ Panel {
             }
 
             Row {
+              visible: false
               spacing: Style.space(6)
               Repeater {
                 model: [
-                  { key: "x-api", label: "X API" },
-                  { key: "rss", label: "RSS" },
-                  { key: "demo", label: "Demo" }
+                  { key: "x-api", label: "X API" }
                 ]
                 Rectangle {
                   id: sourceChoice
@@ -342,7 +345,7 @@ Panel {
               color: Util.alpha(Color.foreground, 0.06)
               border.width: 1
               border.color: bearerInput.activeFocus ? Color.accent : Util.alpha(Color.foreground, 0.16)
-              visible: root.setupSource === "x-api"
+              visible: true
               TextInput {
                 id: bearerInput
                 anchors.fill: parent
@@ -359,8 +362,7 @@ Panel {
                 clip: true
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.radioService && root.radioService.source === "x-api"
-                    ? "Bearer token saved — paste to replace" : "Paste OAuth 2.0 bearer token"
+                  text: root.connected ? "Bearer token validated — paste to replace" : "Paste OAuth 2.0 bearer token"
                   color: Util.alpha(Color.foreground, 0.4)
                   font: parent.font
                   visible: parent.text.length === 0
@@ -376,7 +378,7 @@ Panel {
               color: Util.alpha(Color.foreground, 0.06)
               border.width: 1
               border.color: rssInput.activeFocus ? Color.accent : Util.alpha(Color.foreground, 0.16)
-              visible: root.setupSource === "rss"
+              visible: false
               TextInput {
                 id: rssInput
                 anchors.fill: parent
@@ -404,7 +406,7 @@ Panel {
 
             Text {
               width: parent.width
-              visible: root.setupSource === "demo"
+              visible: false
               text: "Preview the complete interface with clearly labeled sample transmissions."
               color: Util.alpha(Color.foreground, 0.62)
               font.family: root.contentFontFamily
@@ -420,7 +422,7 @@ Panel {
               opacity: root.radioService && root.radioService.configuring ? 0.55 : 1
               Text {
                 anchors.centerIn: parent
-                text: root.radioService && root.radioService.configuring ? "Tuning…" : "Save & tune"
+                text: root.radioService && root.radioService.configuring ? "Validating connection…" : "Connect"
                 color: Color.background
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.body
@@ -437,6 +439,7 @@ Panel {
         }
 
         Row {
+          visible: root.connected
           spacing: Style.space(6)
           Repeater {
             model: [
@@ -470,6 +473,7 @@ Panel {
 
         Flickable {
           id: feedFlick
+          visible: root.connected
           width: parent.width
           height: parent.height - y
           contentWidth: width

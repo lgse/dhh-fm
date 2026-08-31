@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import qs.Commons
 
 Item {
@@ -11,7 +10,7 @@ Item {
   property int activityLevel: 0
   property int unreadCount: 0
   property bool animated: true
-  property url avatarSource: "https://github.com/dhh.png?size=256"
+  readonly property bool talking: animated && activityLevel > 0
 
   implicitWidth: 72
   implicitHeight: 72
@@ -28,7 +27,7 @@ Item {
     opacity: 0.85
 
     SequentialAnimation on scale {
-      running: root.animated && root.activityLevel > 0
+      running: root.talking
       loops: Animation.Infinite
       NumberAnimation { from: 0.94; to: 1.03; duration: Math.max(420, 1250 - root.activityLevel * 220); easing.type: Easing.InOutSine }
       NumberAnimation { from: 1.03; to: 0.94; duration: Math.max(420, 1250 - root.activityLevel * 220); easing.type: Easing.InOutSine }
@@ -36,64 +35,88 @@ Item {
   }
 
   Rectangle {
-    id: photoMask
     anchors.centerIn: parent
-    width: parent.width * 0.82
-    height: width
-    radius: width / 2
-    color: "white"
-    visible: false
-    layer.enabled: true
-  }
-
-  Rectangle {
-    id: photoFrame
-    anchors.centerIn: parent
-    width: parent.width * 0.82
+    width: parent.width * 0.84
     height: width
     radius: width / 2
     color: root.background
     border.width: 1
     border.color: Util.alpha(root.foreground, 0.18)
-
-    Text {
-      anchors.centerIn: parent
-      text: "DHH"
-      color: root.foreground
-      font.pixelSize: parent.width * 0.25
-      font.bold: true
-      visible: portrait.status !== Image.Ready
-    }
   }
 
   Item {
-    anchors.fill: photoFrame
-    layer.enabled: true
-    layer.smooth: true
-    layer.effect: MultiEffect {
-      maskEnabled: true
-      maskSource: photoMask
-      maskThresholdMin: 0.3
-      maskSpreadAtMin: 0.3
+    id: head
+    anchors.centerIn: parent
+    width: parent.width * 0.88
+    height: width
+    transformOrigin: Item.Bottom
+
+    SequentialAnimation on rotation {
+      running: root.talking
+      loops: Animation.Infinite
+      NumberAnimation { from: -2.4; to: 2.2; duration: 950; easing.type: Easing.InOutSine }
+      NumberAnimation { from: 2.2; to: -1.2; duration: 720; easing.type: Easing.InOutSine }
+      NumberAnimation { from: -1.2; to: -2.4; duration: 520; easing.type: Easing.InOutSine }
+    }
+
+    SequentialAnimation on scale {
+      running: root.talking
+      loops: Animation.Infinite
+      NumberAnimation { from: 0.985; to: 1.012; duration: 950; easing.type: Easing.InOutSine }
+      NumberAnimation { from: 1.012; to: 0.985; duration: 1240; easing.type: Easing.InOutSine }
     }
 
     Image {
-      id: portrait
       anchors.fill: parent
-      source: root.avatarSource
-      fillMode: Image.PreserveAspectCrop
+      source: Qt.resolvedUrl("assets/dhh-cutout.png")
+      fillMode: Image.PreserveAspectFit
       asynchronous: true
       cache: true
       smooth: true
+    }
+
+    // A deliberately simple South Park-style mouth laid over the portrait.
+    // At bar size it reads as speech; in the panel the tiny jaw flap is visible.
+    Rectangle {
+      id: mouth
+      x: parent.width * 0.39
+      y: parent.height * 0.695
+      width: parent.width * 0.22
+      height: parent.height * 0.075
+      radius: width / 2
+      color: "#24100f"
+      transformOrigin: Item.Top
+      visible: root.talking
+
+      Rectangle {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        width: parent.width * 0.72
+        height: parent.height * 0.27
+        radius: height / 2
+        color: "#f6eee7"
+      }
+
+      SequentialAnimation on scale {
+        running: root.talking
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.16; to: 1.0; duration: 150; easing.type: Easing.OutQuad }
+        PauseAnimation { duration: 70 }
+        NumberAnimation { from: 1.0; to: 0.22; duration: 120; easing.type: Easing.InQuad }
+        PauseAnimation { duration: 180 }
+        NumberAnimation { from: 0.22; to: 0.72; duration: 110 }
+        NumberAnimation { from: 0.72; to: 0.16; duration: 130 }
+        PauseAnimation { duration: 260 }
+      }
     }
   }
 
   Row {
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
-    anchors.bottomMargin: parent.height * 0.02
+    anchors.bottomMargin: parent.height * 0.01
     spacing: Math.max(1, parent.width * 0.025)
-    visible: root.activityLevel > 0
+    visible: root.talking
 
     Repeater {
       model: 3
@@ -106,7 +129,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         SequentialAnimation on scale {
-          running: root.animated && root.activityLevel > 0
+          running: root.talking
           loops: Animation.Infinite
           PauseAnimation { duration: index * 80 }
           NumberAnimation { from: 0.55; to: 1.35; duration: 180 }

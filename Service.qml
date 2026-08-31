@@ -11,6 +11,7 @@ Item {
     fetched_at: "",
     last_created_at: "",
     partial_history: true,
+    connected: false,
     error: "",
     unread_count: 0,
     stats: ({ total: 0, posts: 0, replies: 0, quotes: 0, reposts: 0, engagement: 0, views: 0 }),
@@ -26,6 +27,7 @@ Item {
   readonly property string fetchedAt: String(snapshot.fetched_at || "")
   readonly property string lastCreatedAt: String(snapshot.last_created_at || "")
   readonly property int unreadCount: Math.max(0, Number(snapshot.unread_count || 0))
+  readonly property bool connected: snapshot.connected === true
   readonly property bool configured: source !== "unconfigured"
   readonly property string helperPath: {
     var url = String(Qt.resolvedUrl("dhh-fm.py"))
@@ -119,14 +121,17 @@ Item {
       write(payload + "\n")
       payload = ""
     }
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: if (text.trim()) root.applySnapshot(text)
+    }
     stderr: StdioCollector {
       waitForEnd: true
       onStreamFinished: if (text.trim()) root.lastError = text.trim().split("\n").pop()
     }
     onExited: function(exitCode) {
       root.configuring = false
-      if (exitCode === 0) root.refresh()
-      else if (!root.lastError) root.lastError = "Could not save the station settings"
+      if (exitCode !== 0 && !root.lastError) root.lastError = "Could not validate the API connection"
     }
   }
 

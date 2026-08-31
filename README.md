@@ -8,7 +8,8 @@ DHH FM puts David Heinemeier Hansson's public X activity in the Omarchy Quattro 
 
 ## Features
 
-- Animated circular DHH station ident with ON AIR and dead-air states.
+- Recognizable DHH cutout with a subtle head turn and South Park-style talking mouth.
+- Animated ON AIR ring and dead-air states.
 - Pulsing unread indicator for transmissions that have arrived since the panel was last opened.
 - Feed filters for all transmissions, posts, and replies.
 - Rolling 24-hour post and reply counts.
@@ -34,7 +35,7 @@ omarchy bar plugin add lgse.dhh-fm --section right
 
 ## Tune the station
 
-Open DHH FM, click the settings button, and choose **X API**, **RSS**, or **Demo**. Paste the bearer token or feed URL directly into the widget and select **Save & tune**. Credentials travel to the helper over stdin—not process arguments—and are stored locally with mode `0600` in:
+Open DHH FM and paste an OAuth 2.0 app-only bearer token into the connection gate. The feed and DHH station ident remain locked until the helper successfully validates the token against X API v2. Credentials travel to the helper over stdin—not process arguments—and are stored locally with mode `0600` only after validation:
 
 ```text
 ~/.config/omarchy/dhh-fm/config.json
@@ -42,17 +43,11 @@ Open DHH FM, click the settings button, and choose **X API**, **RSS**, or **Demo
 
 ### Official X API
 
-Select **X API** in the widget and paste an OAuth 2.0 app-only bearer token. `DHH_FM_X_BEARER_TOKEN` remains available as an advanced environment override.
+Paste an OAuth 2.0 app-only bearer token into the widget. `DHH_FM_X_BEARER_TOKEN` remains available as an advanced environment override.
 
 The adapter requests DHH's latest 100 public posts and public metrics through X API v2. Available endpoints, quotas, fields, and pricing are controlled by X and may vary by developer tier.
 
-### RSS-compatible fallback
-
-DHH FM can consume a user-provided RSS/Nitter-compatible feed. Select **RSS** in the widget and paste its full `http(s)` feed URL.
-
-RSS is credential-free but usually lacks engagement metrics and complete reply context. Instances can also disappear or rate-limit requests; DHH FM deliberately does not ship a hard-coded public instance.
-
-Middle-click the bar ident or use the panel refresh button after changing sources.
+After connection, middle-click the bar ident or use the panel refresh button to update immediately. Temporary network failures use the local cache; authentication failures return the panel to the connection gate.
 
 ## State
 

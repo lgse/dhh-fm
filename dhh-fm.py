@@ -280,6 +280,7 @@ def empty_snapshot(message: str = "Choose a data source to begin broadcasting") 
         "fetched_at": "",
         "last_created_at": "",
         "partial_history": True,
+        "connected": False,
         "error": message,
         "unread_count": 0,
         "stats": calculate_stats([]),
@@ -294,6 +295,7 @@ def build_snapshot(posts: list[dict], source: str, error: str = "") -> dict:
         "fetched_at": isoformat(utc_now()),
         "last_created_at": posts[0]["created_at"] if posts else "",
         "partial_history": source != "demo",
+        "connected": source in ("x-api", "rss"),
         "error": error,
         "unread_count": calculate_unread(posts, seen_at()),
         "stats": calculate_stats(posts),
@@ -317,8 +319,10 @@ def refresh() -> dict:
         write_json_private(CACHE_PATH, snapshot)
         return snapshot
     except (OSError, ValueError, RuntimeError, ET.ParseError, urllib.error.URLError) as error:
-        if cached_posts:
+        if cached_posts and cached.get("connected"):
             cached["error"] = str(error)
+            if isinstance(error, urllib.error.HTTPError) and error.code in (401, 403):
+                cached["connected"] = False
             cached["unread_count"] = calculate_unread(cached_posts, seen_at())
             cached["stats"] = calculate_stats(cached_posts)
             return cached
@@ -359,11 +363,32 @@ def configure_json() -> dict:
         raise ValueError("invalid configuration payload") from error
     if not isinstance(payload, dict):
         raise ValueError("configuration payload must be an object")
-    return save_configuration(
-        str(payload.get("source", "")),
-        bearer_token=str(payload.get("bearer_token", "")),
-        rss_url=str(payload.get("rss_url", "")),
-    )
+
+    source = str(payload.get("source", ""))
+    token = str(payload.get("bearer_token", "")).strip()
+    rss_url = str(payload.get("rss_url", "")).strip()
+    candidate = load_config()
+    candidate["source"] = source
+    if token:
+        candidate["bearer_token"] = token
+    if rss_url:
+        candidate["rss_url"] = rss_url
+
+    if source == "x-api":
+        if not (os.environ.get("DHH_FM_X_BEARER_TOKEN") or candidate.get("bearer_token")):
+            raise ValueError("Paste an OAuth 2.0 bearer token")
+        fresh = fetch_x_api(candidate)
+    elif source == "rss":
+        fresh = fetch_rss(candidate)
+    else:
+        raise ValueError("A live connection is required")
+
+    save_configuration(source, bearer_token=token, rss_url=rss_url)
+    cached = read_json(CACHE_PATH, empty_snapshot())
+    cached_posts = cached.get("posts", []) if cached.get("source") == source else []
+    snapshot = build_snapshot(merge_posts(fresh, cached_posts), source)
+    write_json_private(CACHE_PATH, snapshot)
+    return snapshot
 
 
 def main() -> int:
