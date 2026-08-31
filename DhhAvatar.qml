@@ -86,7 +86,7 @@ Item {
       width: parent.width * 0.22
       height: parent.height * 0.075
       radius: width / 2
-      color: "#24100f"
+      color: root.background
       transformOrigin: Item.Top
       visible: root.talking
 
@@ -96,7 +96,7 @@ Item {
         width: parent.width * 0.72
         height: parent.height * 0.27
         radius: height / 2
-        color: "#f6eee7"
+        color: root.foreground
       }
 
       SequentialAnimation on scale {
