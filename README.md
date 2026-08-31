@@ -34,15 +34,7 @@ omarchy bar plugin add lgse.dhh-fm --section right
 
 ## Tune the station
 
-To preview the complete interface with clearly labeled sample transmissions:
-
-```sh
-python3 ~/.config/omarchy/plugins/lgse.dhh-fm/dhh-fm.py configure demo
-```
-
-Switch to a live source when ready using one of the options below.
-
-Configuration is stored with mode `0600` in:
+Open DHH FM, click the settings button, and choose **X API**, **RSS**, or **Demo**. Paste the bearer token or feed URL directly into the widget and select **Save & tune**. Credentials travel to the helper over stdin—not process arguments—and are stored locally with mode `0600` in:
 
 ```text
 ~/.config/omarchy/dhh-fm/config.json
@@ -50,30 +42,13 @@ Configuration is stored with mode `0600` in:
 
 ### Official X API
 
-Configure the source:
-
-```sh
-python3 ~/.config/omarchy/plugins/lgse.dhh-fm/dhh-fm.py configure x-api
-```
-
-Supply an app bearer token through the environment used to launch `omarchy-shell`:
-
-```sh
-export DHH_FM_X_BEARER_TOKEN='...'
-```
-
-For a quick local setup, `bearer_token` may instead be added to the private config file. The environment is preferred because it keeps the token out of configuration backups.
+Select **X API** in the widget and paste an OAuth 2.0 app-only bearer token. `DHH_FM_X_BEARER_TOKEN` remains available as an advanced environment override.
 
 The adapter requests DHH's latest 100 public posts and public metrics through X API v2. Available endpoints, quotas, fields, and pricing are controlled by X and may vary by developer tier.
 
 ### RSS-compatible fallback
 
-DHH FM can consume a user-provided RSS/Nitter-compatible feed:
-
-```sh
-python3 ~/.config/omarchy/plugins/lgse.dhh-fm/dhh-fm.py \
-  configure rss --rss-url 'https://YOUR-INSTANCE/dhh/rss'
-```
+DHH FM can consume a user-provided RSS/Nitter-compatible feed. Select **RSS** in the widget and paste its full `http(s)` feed URL.
 
 RSS is credential-free but usually lacks engagement metrics and complete reply context. Instances can also disappear or rate-limit requests; DHH FM deliberately does not ship a hard-coded public instance.
 

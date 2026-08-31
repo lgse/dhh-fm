@@ -1,5 +1,6 @@
 import importlib.util
 import pathlib
+import tempfile
 import unittest
 
 MODULE_PATH = pathlib.Path(__file__).parents[1] / "dhh-fm.py"
@@ -38,6 +39,19 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(dhh_fm.calculate_unread(posts, ""), 3)
         self.assertEqual(dhh_fm.calculate_unread(posts, "2026-03-18T10:30:00Z"), 2)
         self.assertEqual(dhh_fm.calculate_unread(posts, "2026-03-18T12:00:00Z"), 0)
+
+    def test_saves_token_privately_without_returning_it(self):
+        original = dhh_fm.CONFIG_PATH
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                path = pathlib.Path(directory) / "config.json"
+                dhh_fm.CONFIG_PATH = path
+                result = dhh_fm.save_configuration("x-api", bearer_token="secret-token")
+                self.assertNotIn("secret-token", str(result))
+                self.assertEqual(dhh_fm.read_json(path, {})["bearer_token"], "secret-token")
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        finally:
+            dhh_fm.CONFIG_PATH = original
 
     def test_normalizes_x_tweet(self):
         tweet = {

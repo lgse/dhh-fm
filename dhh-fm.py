@@ -335,13 +335,35 @@ def mark_seen() -> dict:
     return cached
 
 
-def configure(args) -> dict:
+def save_configuration(source: str, bearer_token: str = "", rss_url: str = "") -> dict:
+    if source not in ("x-api", "rss", "demo"):
+        raise ValueError("unsupported source")
     config = load_config()
-    config["source"] = args.source
-    if args.rss_url:
-        config["rss_url"] = args.rss_url
+    config["source"] = source
+    if bearer_token:
+        config["bearer_token"] = bearer_token.strip()
+    if rss_url:
+        config["rss_url"] = rss_url.strip()
     write_json_private(CONFIG_PATH, config)
-    return config
+    return {"source": source, "configured": True}
+
+
+def configure(args) -> dict:
+    return save_configuration(args.source, rss_url=args.rss_url)
+
+
+def configure_json() -> dict:
+    try:
+        payload = json.load(sys.stdin)
+    except (ValueError, TypeError) as error:
+        raise ValueError("invalid configuration payload") from error
+    if not isinstance(payload, dict):
+        raise ValueError("configuration payload must be an object")
+    return save_configuration(
+        str(payload.get("source", "")),
+        bearer_token=str(payload.get("bearer_token", "")),
+        rss_url=str(payload.get("rss_url", "")),
+    )
 
 
 def main() -> int:
@@ -350,6 +372,7 @@ def main() -> int:
     subparsers.add_parser("refresh", help="fetch and print the normalized snapshot")
     subparsers.add_parser("snapshot", help="print the cached snapshot")
     subparsers.add_parser("mark-seen", help="mark the latest cached transmission as seen")
+    subparsers.add_parser("configure-json", help="read source configuration as JSON from stdin")
     config_parser = subparsers.add_parser("configure", help="configure a feed source")
     config_parser.add_argument("source", choices=("x-api", "rss", "demo"))
     config_parser.add_argument("--rss-url", default="")
@@ -357,6 +380,8 @@ def main() -> int:
 
     if args.command == "configure":
         result = configure(args)
+    elif args.command == "configure-json":
+        result = configure_json()
     elif args.command == "mark-seen":
         result = mark_seen()
     elif args.command == "snapshot":

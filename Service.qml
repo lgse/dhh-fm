@@ -17,6 +17,7 @@ Item {
     posts: []
   })
   property bool refreshing: false
+  property bool configuring: false
   property string lastError: ""
 
   readonly property var stats: snapshot.stats || ({})
@@ -48,6 +49,19 @@ Item {
     root.refreshing = true
     root.lastError = ""
     refreshProcess.running = true
+  }
+
+  function configure(source, bearerToken, rssUrl) {
+    if (configureProcess.running) return
+    var payload = {
+      source: String(source || ""),
+      bearer_token: String(bearerToken || ""),
+      rss_url: String(rssUrl || "")
+    }
+    root.configuring = true
+    root.lastError = ""
+    configureProcess.payload = JSON.stringify(payload)
+    configureProcess.running = true
   }
 
   function markSeen() {
@@ -95,6 +109,26 @@ Item {
   }
 
   Process { id: copyProcess }
+
+  Process {
+    id: configureProcess
+    property string payload: ""
+    command: ["python3", root.helperPath, "configure-json"]
+    stdinEnabled: true
+    onStarted: {
+      write(payload + "\n")
+      payload = ""
+    }
+    stderr: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: if (text.trim()) root.lastError = text.trim().split("\n").pop()
+    }
+    onExited: function(exitCode) {
+      root.configuring = false
+      if (exitCode === 0) root.refresh()
+      else if (!root.lastError) root.lastError = "Could not save the station settings"
+    }
+  }
 
   Process {
     id: markSeenProcess

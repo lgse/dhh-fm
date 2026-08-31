@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import qs.Commons
 
 Item {
@@ -10,6 +11,7 @@ Item {
   property int activityLevel: 0
   property int unreadCount: 0
   property bool animated: true
+  property url avatarSource: "https://github.com/dhh.png?size=256"
 
   implicitWidth: 72
   implicitHeight: 72
@@ -23,7 +25,7 @@ Item {
     color: "transparent"
     border.width: Math.max(1, width * 0.035)
     border.color: root.activityLevel > 0 ? root.accent : Util.alpha(root.foreground, 0.25)
-    opacity: 0.8
+    opacity: 0.85
 
     SequentialAnimation on scale {
       running: root.animated && root.activityLevel > 0
@@ -34,6 +36,18 @@ Item {
   }
 
   Rectangle {
+    id: photoMask
+    anchors.centerIn: parent
+    width: parent.width * 0.82
+    height: width
+    radius: width / 2
+    color: "white"
+    visible: false
+    layer.enabled: true
+  }
+
+  Rectangle {
+    id: photoFrame
     anchors.centerIn: parent
     width: parent.width * 0.82
     height: width
@@ -41,70 +55,69 @@ Item {
     color: root.background
     border.width: 1
     border.color: Util.alpha(root.foreground, 0.18)
-    clip: true
 
-    Rectangle {
-      id: face
-      anchors.horizontalCenter: parent.horizontalCenter
-      y: parent.height * 0.16
-      width: parent.width * 0.52
-      height: parent.height * 0.66
-      radius: width * 0.42
-      color: "#e5a273"
+    Text {
+      anchors.centerIn: parent
+      text: "DHH"
+      color: root.foreground
+      font.pixelSize: parent.width * 0.25
+      font.bold: true
+      visible: portrait.status !== Image.Ready
+    }
+  }
 
+  Item {
+    anchors.fill: photoFrame
+    layer.enabled: true
+    layer.smooth: true
+    layer.effect: MultiEffect {
+      maskEnabled: true
+      maskSource: photoMask
+      maskThresholdMin: 0.3
+      maskSpreadAtMin: 0.3
+    }
+
+    Image {
+      id: portrait
+      anchors.fill: parent
+      source: root.avatarSource
+      fillMode: Image.PreserveAspectCrop
+      asynchronous: true
+      cache: true
+      smooth: true
+    }
+  }
+
+  Row {
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.bottomMargin: parent.height * 0.02
+    spacing: Math.max(1, parent.width * 0.025)
+    visible: root.activityLevel > 0
+
+    Repeater {
+      model: 3
       Rectangle {
-        x: -width * 0.08
-        y: parent.height * 0.27
-        width: parent.width * 0.58
-        height: parent.height * 0.17
-        radius: height / 2
-        color: "transparent"
-        border.width: Math.max(1, root.width * 0.025)
-        border.color: "#282018"
-      }
+        required property int index
+        width: Math.max(1, root.width * 0.035)
+        height: root.height * (0.08 + index * 0.025)
+        radius: width / 2
+        color: root.accent
+        anchors.verticalCenter: parent.verticalCenter
 
-      Rectangle {
-        x: parent.width * 0.50
-        y: parent.height * 0.27
-        width: parent.width * 0.58
-        height: parent.height * 0.17
-        radius: height / 2
-        color: "transparent"
-        border.width: Math.max(1, root.width * 0.025)
-        border.color: "#282018"
-      }
-
-      Rectangle {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * 0.57
-        width: parent.width * 0.75
-        height: parent.height * 0.42
-        radius: width * 0.32
-        color: "#6a3d29"
-
-        Rectangle {
-          anchors.horizontalCenter: parent.horizontalCenter
-          y: parent.height * 0.38
-          width: parent.width * 0.34
-          height: Math.max(1, parent.height * 0.09)
-          radius: height / 2
-          color: "#1b1110"
-
-          SequentialAnimation on scale {
-            running: root.animated && root.activityLevel > 0
-            loops: Animation.Infinite
-            NumberAnimation { from: 0.65; to: 1.35; duration: 170 }
-            PauseAnimation { duration: 90 }
-            NumberAnimation { from: 1.35; to: 0.65; duration: 150 }
-            PauseAnimation { duration: 240 }
-          }
+        SequentialAnimation on scale {
+          running: root.animated && root.activityLevel > 0
+          loops: Animation.Infinite
+          PauseAnimation { duration: index * 80 }
+          NumberAnimation { from: 0.55; to: 1.35; duration: 180 }
+          NumberAnimation { from: 1.35; to: 0.55; duration: 230 }
+          PauseAnimation { duration: (2 - index) * 80 }
         }
       }
     }
   }
 
   Rectangle {
-    id: unreadBadge
     anchors.right: parent.right
     anchors.top: parent.top
     width: parent.width * 0.24

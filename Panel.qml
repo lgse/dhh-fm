@@ -14,6 +14,8 @@ Panel {
   property var hostWidget: null
   property var radioService: null
   property string feedFilter: "all"
+  property string setupSource: "x-api"
+  property bool configEditorOpen: false
   property double nowMs: Date.now()
 
   readonly property var barIdentity: hostWidget || root
@@ -37,8 +39,18 @@ Panel {
       Math.max(0, feedFlick.contentHeight - feedFlick.height)))
   }
 
+  function saveConfiguration() {
+    if (!radioService) return
+    radioService.configure(setupSource, bearerInput.text, rssInput.text)
+    bearerInput.text = ""
+  }
+
   onOpenedChanged: {
-    if (opened && radioService) radioService.markSeen()
+    if (!opened || !radioService) return
+    radioService.markSeen()
+    if (!radioService.configured) configEditorOpen = true
+    if (radioService.source === "x-api" || radioService.source === "rss" || radioService.source === "demo")
+      setupSource = radioService.source
   }
   onPostsChanged: {
     if (opened && radioService) radioService.markSeen()
@@ -87,7 +99,7 @@ Panel {
           }
 
           Column {
-            width: parent.width - Style.space(68) - refreshButton.width - parent.spacing * 2
+            width: parent.width - Style.space(68) - settingsButton.width - refreshButton.width - parent.spacing * 3
             anchors.verticalCenter: parent.verticalCenter
             spacing: Style.space(2)
 
@@ -134,6 +146,30 @@ Panel {
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
               elide: Text.ElideRight
+            }
+          }
+
+          Rectangle {
+            id: settingsButton
+            anchors.verticalCenter: parent.verticalCenter
+            width: Style.space(34)
+            height: width
+            radius: Style.cornerRadius
+            color: root.configEditorOpen ? Util.alpha(Color.accent, 0.2)
+              : (settingsMouse.containsMouse ? Util.alpha(Color.foreground, 0.12) : Util.alpha(Color.foreground, 0.06))
+            Text {
+              anchors.centerIn: parent
+              text: "󰒓"
+              color: root.configEditorOpen ? Color.accent : Color.foreground
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.body
+            }
+            MouseArea {
+              id: settingsMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.configEditorOpen = !root.configEditorOpen
             }
           }
 
@@ -233,6 +269,173 @@ Panel {
           }
         }
 
+        Rectangle {
+          width: parent.width
+          height: configContent.implicitHeight + Style.space(24)
+          radius: Style.cornerRadius
+          color: Util.alpha(Color.foreground, 0.045)
+          border.width: 1
+          border.color: Util.alpha(Color.foreground, 0.12)
+          visible: root.configEditorOpen
+
+          Column {
+            id: configContent
+            x: Style.space(12)
+            y: Style.space(12)
+            width: parent.width - Style.space(24)
+            spacing: Style.space(9)
+
+            Text {
+              text: "Tune the station"
+              color: Color.foreground
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+
+            Text {
+              width: parent.width
+              text: "Choose a source. Credentials stay in a private local file and are never passed on the command line."
+              color: Util.alpha(Color.foreground, 0.62)
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.Wrap
+            }
+
+            Row {
+              spacing: Style.space(6)
+              Repeater {
+                model: [
+                  { key: "x-api", label: "X API" },
+                  { key: "rss", label: "RSS" },
+                  { key: "demo", label: "Demo" }
+                ]
+                Rectangle {
+                  id: sourceChoice
+                  required property var modelData
+                  width: choiceText.implicitWidth + Style.space(20)
+                  height: Style.space(29)
+                  radius: height / 2
+                  color: root.setupSource === modelData.key ? Color.accent : Util.alpha(Color.foreground, 0.07)
+                  Text {
+                    id: choiceText
+                    anchors.centerIn: parent
+                    text: sourceChoice.modelData.label
+                    color: root.setupSource === sourceChoice.modelData.key ? Color.background : Color.foreground
+                    font.family: root.contentFontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: root.setupSource === sourceChoice.modelData.key
+                  }
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.setupSource = sourceChoice.modelData.key
+                  }
+                }
+              }
+            }
+
+            Rectangle {
+              width: parent.width
+              height: Style.space(34)
+              radius: Style.cornerRadius
+              color: Util.alpha(Color.foreground, 0.06)
+              border.width: 1
+              border.color: bearerInput.activeFocus ? Color.accent : Util.alpha(Color.foreground, 0.16)
+              visible: root.setupSource === "x-api"
+              TextInput {
+                id: bearerInput
+                anchors.fill: parent
+                anchors.leftMargin: Style.space(10)
+                anchors.rightMargin: Style.space(10)
+                verticalAlignment: TextInput.AlignVCenter
+                color: Color.foreground
+                selectionColor: Color.accent
+                selectedTextColor: Color.background
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.body
+                echoMode: TextInput.Password
+                selectByMouse: true
+                clip: true
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: root.radioService && root.radioService.source === "x-api"
+                    ? "Bearer token saved — paste to replace" : "Paste OAuth 2.0 bearer token"
+                  color: Util.alpha(Color.foreground, 0.4)
+                  font: parent.font
+                  visible: parent.text.length === 0
+                }
+                onAccepted: root.saveConfiguration()
+              }
+            }
+
+            Rectangle {
+              width: parent.width
+              height: Style.space(34)
+              radius: Style.cornerRadius
+              color: Util.alpha(Color.foreground, 0.06)
+              border.width: 1
+              border.color: rssInput.activeFocus ? Color.accent : Util.alpha(Color.foreground, 0.16)
+              visible: root.setupSource === "rss"
+              TextInput {
+                id: rssInput
+                anchors.fill: parent
+                anchors.leftMargin: Style.space(10)
+                anchors.rightMargin: Style.space(10)
+                verticalAlignment: TextInput.AlignVCenter
+                color: Color.foreground
+                selectionColor: Color.accent
+                selectedTextColor: Color.background
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.body
+                selectByMouse: true
+                clip: true
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: root.radioService && root.radioService.source === "rss"
+                    ? "RSS URL saved — paste to replace" : "https://your-instance/dhh/rss"
+                  color: Util.alpha(Color.foreground, 0.4)
+                  font: parent.font
+                  visible: parent.text.length === 0
+                }
+                onAccepted: root.saveConfiguration()
+              }
+            }
+
+            Text {
+              width: parent.width
+              visible: root.setupSource === "demo"
+              text: "Preview the complete interface with clearly labeled sample transmissions."
+              color: Util.alpha(Color.foreground, 0.62)
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.Wrap
+            }
+
+            Rectangle {
+              width: parent.width
+              height: Style.space(34)
+              radius: Style.cornerRadius
+              color: Color.accent
+              opacity: root.radioService && root.radioService.configuring ? 0.55 : 1
+              Text {
+                anchors.centerIn: parent
+                text: root.radioService && root.radioService.configuring ? "Tuning…" : "Save & tune"
+                color: Color.background
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.body
+                font.bold: true
+              }
+              MouseArea {
+                anchors.fill: parent
+                enabled: !(root.radioService && root.radioService.configuring)
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.saveConfiguration()
+              }
+            }
+          }
+        }
+
         Row {
           spacing: Style.space(6)
           Repeater {
@@ -303,7 +506,7 @@ Panel {
                 }
                 Text {
                   width: parent.width
-                  text: "Configure the official X API or an RSS-compatible fallback. No browser cookies or X password required."
+                  text: "Choose the official X API or an RSS-compatible fallback above. No browser cookies or X password required."
                   color: Util.alpha(Color.foreground, 0.65)
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.caption
@@ -311,7 +514,7 @@ Panel {
                 }
                 Text {
                   width: parent.width
-                  text: "python3 dhh-fm.py configure demo"
+                  text: "Use Demo to preview the station without credentials."
                   color: Color.accent
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.caption
