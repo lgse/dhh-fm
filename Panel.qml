@@ -43,7 +43,6 @@ Panel {
   function saveConfiguration() {
     if (!radioService) return
     radioService.configure("x-api", bearerInput.text, "")
-    bearerInput.text = ""
   }
 
   onOpenedChanged: {
@@ -53,6 +52,9 @@ Panel {
   }
   onPostsChanged: {
     if (opened && radioService) radioService.markSeen()
+  }
+  onConnectedChanged: {
+    if (connected) bearerInput.text = ""
   }
 
   Timer {

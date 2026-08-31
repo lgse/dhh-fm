@@ -358,7 +358,7 @@ def configure(args) -> dict:
 
 def configure_json() -> dict:
     try:
-        payload = json.load(sys.stdin)
+        payload = json.loads(sys.stdin.readline())
     except (ValueError, TypeError) as error:
         raise ValueError("invalid configuration payload") from error
     if not isinstance(payload, dict):
@@ -403,16 +403,20 @@ def main() -> int:
     config_parser.add_argument("--rss-url", default="")
     args = parser.parse_args()
 
-    if args.command == "configure":
-        result = configure(args)
-    elif args.command == "configure-json":
-        result = configure_json()
-    elif args.command == "mark-seen":
-        result = mark_seen()
-    elif args.command == "snapshot":
-        result = read_json(CACHE_PATH, empty_snapshot())
-    else:
-        result = refresh()
+    try:
+        if args.command == "configure":
+            result = configure(args)
+        elif args.command == "configure-json":
+            result = configure_json()
+        elif args.command == "mark-seen":
+            result = mark_seen()
+        elif args.command == "snapshot":
+            result = read_json(CACHE_PATH, empty_snapshot())
+        else:
+            result = refresh()
+    except (OSError, ValueError, RuntimeError, ET.ParseError, urllib.error.URLError) as error:
+        print(str(error), file=sys.stderr)
+        return 1
     json.dump(result, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0
