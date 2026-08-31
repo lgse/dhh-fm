@@ -54,7 +54,12 @@ Panel {
     if (opened && radioService) radioService.markSeen()
   }
   onConnectedChanged: {
-    if (connected) bearerInput.text = ""
+    if (connected) {
+      bearerInput.text = ""
+      configEditorOpen = false
+    } else {
+      configEditorOpen = true
+    }
   }
 
   Timer {
