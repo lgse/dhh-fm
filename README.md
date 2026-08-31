@@ -9,6 +9,7 @@ DHH FM puts David Heinemeier Hansson's public X activity in the Omarchy Quattro 
 ## Features
 
 - Animated circular DHH station ident with ON AIR and dead-air states.
+- Pulsing unread indicator for transmissions that have arrived since the panel was last opened.
 - Feed filters for all transmissions, posts, and replies.
 - Rolling 24-hour post and reply counts.
 - Public engagement and view totals when the source supplies them.
@@ -32,6 +33,14 @@ omarchy bar plugin add lgse.dhh-fm --section right
 ```
 
 ## Tune the station
+
+To preview the complete interface with clearly labeled sample transmissions:
+
+```sh
+python3 ~/.config/omarchy/plugins/lgse.dhh-fm/dhh-fm.py configure demo
+```
+
+Switch to a live source when ready using one of the options below.
 
 Configuration is stored with mode `0600` in:
 
@@ -78,7 +87,7 @@ Normalized public posts are cached at:
 ~/.cache/omarchy/dhh-fm/feed.json
 ```
 
-The cache keeps the panel useful during temporary network or provider failures. It contains only normalized public posts and public metrics.
+The cache keeps the panel useful during temporary network or provider failures. It contains only normalized public posts and public metrics. The latest seen timestamp is stored separately under `~/.local/state/omarchy/dhh-fm/` so unread status survives shell restarts.
 
 ## Interactions
 

@@ -21,8 +21,10 @@ USERNAME = "dhh"
 USER_AGENT = "DHH-FM/0.1 (+https://github.com/lgse/dhh-fm)"
 CONFIG_DIR = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", pathlib.Path.home() / ".config")) / "omarchy" / "dhh-fm"
 CACHE_DIR = pathlib.Path(os.environ.get("XDG_CACHE_HOME", pathlib.Path.home() / ".cache")) / "omarchy" / "dhh-fm"
+STATE_DIR = pathlib.Path(os.environ.get("XDG_STATE_HOME", pathlib.Path.home() / ".local" / "state")) / "omarchy" / "dhh-fm"
 CONFIG_PATH = CONFIG_DIR / "config.json"
 CACHE_PATH = CACHE_DIR / "feed.json"
+STATE_PATH = STATE_DIR / "state.json"
 TAG_RE = re.compile(r"<[^>]+>")
 SPACE_RE = re.compile(r"\s+")
 
@@ -194,6 +196,26 @@ def fetch_rss(config: dict) -> list[dict]:
     return posts
 
 
+def demo_posts() -> list[dict]:
+    now = utc_now()
+    samples = [
+        (6, "reply", "Demo reply: context from the original conversation appears below the transmission."),
+        (38, "post", "Demo transmission: DHH's latest public post will appear here when the station is tuned."),
+        (95, "quote", "Demo quote: public engagement counters are shown when the source provides them."),
+        (210, "post", "Demo transmission: open, reply, or copy a link directly from this card."),
+    ]
+    posts = []
+    for index, (minutes, kind, text) in enumerate(samples, start=1):
+        posts.append({
+            "id": f"demo-{index}", "text": text,
+            "created_at": isoformat(now - dt.timedelta(minutes=minutes)), "kind": kind,
+            "url": "https://x.com/dhh", "reply_to_text": "Demo conversation context" if kind == "reply" else "",
+            "metrics": {"likes": 37 * index, "replies": 3 * index, "reposts": 5 * index,
+                        "quotes": index, "views": 3700 * index},
+        })
+    return posts
+
+
 def merge_posts(fresh: list[dict], cached: list[dict], keep_days: int = 7) -> list[dict]:
     by_id = {str(post.get("id")): post for post in cached if post.get("id")}
     by_id.update({str(post.get("id")): post for post in fresh if post.get("id")})
@@ -231,6 +253,26 @@ def calculate_stats(posts: list[dict], now: dt.datetime | None = None) -> dict:
     return result
 
 
+def calculate_unread(posts: list[dict], seen_at: str = "") -> int:
+    try:
+        boundary = parse_time(seen_at) if seen_at else None
+    except (TypeError, ValueError):
+        boundary = None
+    count = 0
+    for post in posts:
+        try:
+            if boundary is None or parse_time(post.get("created_at", "")) > boundary:
+                count += 1
+        except (TypeError, ValueError):
+            continue
+    return count
+
+
+def seen_at() -> str:
+    state = read_json(STATE_PATH, {})
+    return str(state.get("seen_at", "")) if isinstance(state, dict) else ""
+
+
 def empty_snapshot(message: str = "Choose a data source to begin broadcasting") -> dict:
     return {
         "username": USERNAME,
@@ -239,6 +281,7 @@ def empty_snapshot(message: str = "Choose a data source to begin broadcasting") 
         "last_created_at": "",
         "partial_history": True,
         "error": message,
+        "unread_count": 0,
         "stats": calculate_stats([]),
         "posts": [],
     }
@@ -250,8 +293,9 @@ def build_snapshot(posts: list[dict], source: str, error: str = "") -> dict:
         "source": source,
         "fetched_at": isoformat(utc_now()),
         "last_created_at": posts[0]["created_at"] if posts else "",
-        "partial_history": True,
+        "partial_history": source != "demo",
         "error": error,
+        "unread_count": calculate_unread(posts, seen_at()),
         "stats": calculate_stats(posts),
         "posts": posts,
     }
@@ -262,19 +306,33 @@ def refresh() -> dict:
     source = str(config.get("source", "")).strip()
     cached = read_json(CACHE_PATH, empty_snapshot())
     cached_posts = cached.get("posts", []) if isinstance(cached, dict) else []
-    if source not in ("x-api", "rss"):
+    if source not in ("x-api", "rss", "demo"):
         return cached if cached_posts else empty_snapshot()
     try:
-        fresh = fetch_x_api(config) if source == "x-api" else fetch_rss(config)
+        if source == "demo":
+            fresh = demo_posts()
+        else:
+            fresh = fetch_x_api(config) if source == "x-api" else fetch_rss(config)
         snapshot = build_snapshot(merge_posts(fresh, cached_posts), source)
         write_json_private(CACHE_PATH, snapshot)
         return snapshot
     except (OSError, ValueError, RuntimeError, ET.ParseError, urllib.error.URLError) as error:
         if cached_posts:
             cached["error"] = str(error)
+            cached["unread_count"] = calculate_unread(cached_posts, seen_at())
             cached["stats"] = calculate_stats(cached_posts)
             return cached
         return empty_snapshot(str(error))
+
+
+def mark_seen() -> dict:
+    cached = read_json(CACHE_PATH, empty_snapshot())
+    latest = str(cached.get("last_created_at", "")) if isinstance(cached, dict) else ""
+    if latest:
+        write_json_private(STATE_PATH, {"seen_at": latest})
+    if isinstance(cached, dict):
+        cached["unread_count"] = 0
+    return cached
 
 
 def configure(args) -> dict:
@@ -291,13 +349,16 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("refresh", help="fetch and print the normalized snapshot")
     subparsers.add_parser("snapshot", help="print the cached snapshot")
+    subparsers.add_parser("mark-seen", help="mark the latest cached transmission as seen")
     config_parser = subparsers.add_parser("configure", help="configure a feed source")
-    config_parser.add_argument("source", choices=("x-api", "rss"))
+    config_parser.add_argument("source", choices=("x-api", "rss", "demo"))
     config_parser.add_argument("--rss-url", default="")
     args = parser.parse_args()
 
     if args.command == "configure":
         result = configure(args)
+    elif args.command == "mark-seen":
+        result = mark_seen()
     elif args.command == "snapshot":
         result = read_json(CACHE_PATH, empty_snapshot())
     else:

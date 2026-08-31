@@ -8,6 +8,7 @@ Item {
   property color foreground: "#f5f5f5"
   property color background: "#151515"
   property int activityLevel: 0
+  property int unreadCount: 0
   property bool animated: true
 
   implicitWidth: 72
@@ -99,6 +100,26 @@ Item {
           }
         }
       }
+    }
+  }
+
+  Rectangle {
+    id: unreadBadge
+    anchors.right: parent.right
+    anchors.top: parent.top
+    width: parent.width * 0.24
+    height: width
+    radius: width / 2
+    color: root.accent
+    border.width: Math.max(1, width * 0.12)
+    border.color: root.background
+    visible: root.unreadCount > 0
+
+    SequentialAnimation on scale {
+      running: root.animated && root.unreadCount > 0
+      loops: Animation.Infinite
+      NumberAnimation { from: 0.88; to: 1.18; duration: 420; easing.type: Easing.OutQuad }
+      NumberAnimation { from: 1.18; to: 0.88; duration: 620; easing.type: Easing.InQuad }
     }
   }
 

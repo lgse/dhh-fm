@@ -37,6 +37,13 @@ Panel {
       Math.max(0, feedFlick.contentHeight - feedFlick.height)))
   }
 
+  onOpenedChanged: {
+    if (opened && radioService) radioService.markSeen()
+  }
+  onPostsChanged: {
+    if (opened && radioService) radioService.markSeen()
+  }
+
   Timer {
     interval: 60000
     repeat: true
@@ -76,6 +83,7 @@ Panel {
             foreground: Color.foreground
             background: Color.background
             activityLevel: root.activityLevel
+            unreadCount: root.radioService ? root.radioService.unreadCount : 0
           }
 
           Column {
@@ -303,7 +311,7 @@ Panel {
                 }
                 Text {
                   width: parent.width
-                  text: "python3 dhh-fm.py configure x-api"
+                  text: "python3 dhh-fm.py configure demo"
                   color: Color.accent
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.caption

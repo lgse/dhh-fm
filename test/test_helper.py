@@ -29,6 +29,16 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(stats["engagement"], 8)
         self.assertEqual(stats["views"], 100)
 
+    def test_counts_only_posts_newer_than_seen_boundary(self):
+        posts = [
+            {"created_at": "2026-03-18T12:00:00Z"},
+            {"created_at": "2026-03-18T11:00:00Z"},
+            {"created_at": "2026-03-18T10:00:00Z"},
+        ]
+        self.assertEqual(dhh_fm.calculate_unread(posts, ""), 3)
+        self.assertEqual(dhh_fm.calculate_unread(posts, "2026-03-18T10:30:00Z"), 2)
+        self.assertEqual(dhh_fm.calculate_unread(posts, "2026-03-18T12:00:00Z"), 0)
+
     def test_normalizes_x_tweet(self):
         tweet = {
             "id": "42",

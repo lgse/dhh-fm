@@ -52,6 +52,7 @@ BarWidget {
       foreground: root.bar ? root.bar.foreground : "white"
       background: root.bar ? root.bar.background : "#151515"
       activityLevel: root.activityLevel
+      unreadCount: root.radioService ? root.radioService.unreadCount : 0
     }
 
     MouseArea {
@@ -63,9 +64,13 @@ BarWidget {
         if (mouse.button === Qt.MiddleButton && root.radioService) root.radioService.refresh()
         else root.toggle()
       }
-      onEntered: if (root.bar) root.bar.showTooltip(root,
-        Model.statusLine(root.radioService ? root.radioService.stats : null,
-          root.radioService ? root.radioService.lastCreatedAt : ""))
+      onEntered: if (root.bar) {
+        var unread = root.radioService ? root.radioService.unreadCount : 0
+        root.bar.showTooltip(root, unread > 0
+          ? unread + (unread === 1 ? " unheard transmission" : " unheard transmissions")
+          : Model.statusLine(root.radioService ? root.radioService.stats : null,
+              root.radioService ? root.radioService.lastCreatedAt : ""))
+      }
       onExited: if (root.bar) root.bar.hideTooltip(root)
     }
   }

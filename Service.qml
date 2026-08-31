@@ -12,6 +12,7 @@ Item {
     last_created_at: "",
     partial_history: true,
     error: "",
+    unread_count: 0,
     stats: ({ total: 0, posts: 0, replies: 0, quotes: 0, reposts: 0, engagement: 0, views: 0 }),
     posts: []
   })
@@ -23,6 +24,7 @@ Item {
   readonly property string source: String(snapshot.source || "unconfigured")
   readonly property string fetchedAt: String(snapshot.fetched_at || "")
   readonly property string lastCreatedAt: String(snapshot.last_created_at || "")
+  readonly property int unreadCount: Math.max(0, Number(snapshot.unread_count || 0))
   readonly property bool configured: source !== "unconfigured"
   readonly property string helperPath: {
     var url = String(Qt.resolvedUrl("dhh-fm.py"))
@@ -46,6 +48,14 @@ Item {
     root.refreshing = true
     root.lastError = ""
     refreshProcess.running = true
+  }
+
+  function markSeen() {
+    if (root.unreadCount === 0 || markSeenProcess.running) return
+    var next = Object.assign({}, root.snapshot)
+    next.unread_count = 0
+    root.snapshot = next
+    markSeenProcess.running = true
   }
 
   function openUrl(url) {
@@ -85,6 +95,11 @@ Item {
   }
 
   Process { id: copyProcess }
+
+  Process {
+    id: markSeenProcess
+    command: ["python3", root.helperPath, "mark-seen"]
+  }
 
   Timer {
     interval: 10 * 60 * 1000
