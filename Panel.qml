@@ -303,7 +303,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "Paste a valid OAuth 2.0 app-only bearer token. DHH FM validates it before unlocking the feed. The token stays in a private local file and is never passed on the command line."
+              text: "Paste the Bearer Token from your X developer app. No callback or sign-in flow is required. DHH FM validates it before unlocking the feed, then stores it in a private local file."
               color: Util.alpha(Color.foreground, 0.62)
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.caption
@@ -366,7 +366,7 @@ Panel {
                 clip: true
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.connected ? "Bearer token validated — paste to replace" : "Paste OAuth 2.0 bearer token"
+                  text: root.connected ? "Bearer Token validated — paste to replace" : "Paste X API Bearer Token"
                   color: Util.alpha(Color.foreground, 0.4)
                   font: parent.font
                   visible: parent.text.length === 0

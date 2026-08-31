@@ -35,7 +35,7 @@ omarchy bar plugin add lgse.dhh-fm --section right
 
 ## Tune the station
 
-Open DHH FM and paste an OAuth 2.0 app-only bearer token into the connection gate. The feed and DHH station ident remain locked until the helper successfully validates the token against X API v2. Credentials travel to the helper over stdin—not process arguments—and are stored locally with mode `0600` only after validation:
+Open DHH FM and paste the Bearer Token from your X developer app into the connection gate. The feed and DHH station ident remain locked until the helper successfully validates the token against X API v2. Credentials travel to the helper over stdin—not process arguments—and are stored locally with mode `0600` only after validation:
 
 ```text
 ~/.config/omarchy/dhh-fm/config.json
@@ -43,7 +43,7 @@ Open DHH FM and paste an OAuth 2.0 app-only bearer token into the connection gat
 
 ### Official X API
 
-Paste an OAuth 2.0 app-only bearer token into the widget. `DHH_FM_X_BEARER_TOKEN` remains available as an advanced environment override.
+Paste the X developer app's Bearer Token into the widget. No callback or user sign-in flow is required. `DHH_FM_X_BEARER_TOKEN` remains available as an advanced environment override.
 
 The adapter requests DHH's latest 100 public posts and public metrics through X API v2. Available endpoints, quotas, fields, and pricing are controlled by X and may vary by developer tier.
 

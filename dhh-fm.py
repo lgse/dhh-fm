@@ -376,7 +376,7 @@ def configure_json() -> dict:
 
     if source == "x-api":
         if not (os.environ.get("DHH_FM_X_BEARER_TOKEN") or candidate.get("bearer_token")):
-            raise ValueError("Paste an OAuth 2.0 bearer token")
+            raise ValueError("Paste the Bearer Token from your X developer app")
         fresh = fetch_x_api(candidate)
     elif source == "rss":
         fresh = fetch_rss(candidate)
