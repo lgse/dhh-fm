@@ -24,7 +24,10 @@ Panel {
   readonly property var stats: radioService ? radioService.stats : ({})
   readonly property var posts: radioService ? radioService.posts : []
   readonly property var visiblePosts: Model.filteredPosts(posts, feedFilter)
-  readonly property int activityLevel: root.connected ? Model.activityLevel(stats.total) : 0
+  readonly property var stationState: root.connected
+    ? Model.broadcastState(radioService ? radioService.lastCreatedAt : "", nowMs)
+    : ({ key: "offline", label: "Offline", onAir: false, ageMinutes: -1 })
+  readonly property int activityLevel: root.connected && stationState.onAir ? 3 : 0
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
@@ -142,12 +145,12 @@ Panel {
                 width: onAirText.implicitWidth + Style.space(12)
                 height: Style.space(20)
                 radius: height / 2
-                color: root.activityLevel > 0 ? Util.alpha(Color.urgent, 0.2) : Util.alpha(Color.foreground, 0.08)
+                color: root.stationState.onAir ? Util.alpha(Color.urgent, 0.2) : Util.alpha(Color.foreground, 0.08)
                 Text {
                   id: onAirText
                   anchors.centerIn: parent
-                  text: root.activityLevel > 0 ? "● ON AIR" : "○ DEAD AIR"
-                  color: root.activityLevel > 0 ? Color.urgent : Util.alpha(Color.foreground, 0.6)
+                  text: (root.stationState.onAir ? "● " : "○ ") + root.stationState.label.toUpperCase()
+                  color: root.stationState.onAir ? Color.urgent : Util.alpha(Color.foreground, 0.6)
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.caption
                   font.bold: true

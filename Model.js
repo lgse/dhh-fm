@@ -30,6 +30,34 @@ function relativeTime(iso, nowMs) {
   return new Date(timestamp).toLocaleDateString()
 }
 
+function broadcastState(lastCreatedAt, nowMs) {
+  var timestamp = Date.parse(String(lastCreatedAt || ""))
+  if (!isFinite(timestamp))
+    return { key: "tuning", label: "Tuning in", onAir: false, ageMinutes: -1 }
+
+  var now = nowMs === undefined ? Date.now() : Number(nowMs)
+  var ageMinutes = Math.max(0, (now - timestamp) / 60000)
+  if (ageMinutes <= 15)
+    return { key: "on-air", label: "On air", onAir: true, ageMinutes: ageMinutes }
+  if (ageMinutes <= 60)
+    return { key: "intermission", label: "Brief intermission", onAir: false, ageMinutes: ageMinutes }
+  if (ageMinutes <= 180)
+    return { key: "between-takes", label: "Between takes", onAir: false, ageMinutes: ageMinutes }
+  if (ageMinutes <= 360)
+    return { key: "quiet", label: "Awfully quiet", onAir: false, ageMinutes: ageMinutes }
+  if (ageMinutes <= 720)
+    return { key: "sleeping", label: "Probably sleeping", onAir: false, ageMinutes: ageMinutes }
+  if (ageMinutes <= 1440)
+    return { key: "radio-silence", label: "Radio silence", onAir: false, ageMinutes: ageMinutes }
+  return { key: "transmitter", label: "Check the transmitter", onAir: false, ageMinutes: ageMinutes }
+}
+
+function stateSummary(lastCreatedAt, nowMs) {
+  var state = broadcastState(lastCreatedAt, nowMs)
+  if (!lastCreatedAt) return state.label
+  return state.label + " · last signal " + relativeTime(lastCreatedAt, nowMs)
+}
+
 function statusLine(stats, lastCreatedAt, nowMs) {
   var total = stats ? number(stats.total) : 0
   if (!lastCreatedAt) return "Tuning the transmitter"

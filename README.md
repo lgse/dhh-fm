@@ -9,7 +9,8 @@ DHH FM puts David Heinemeier Hansson's public X activity in the Omarchy Quattro 
 ## Features
 
 - Recognizable DHH cutout with a subtle head turn and hinged South Park-style paper jaw.
-- Animated ON AIR ring and dead-air states.
+- Time-aware station states: On air, Brief intermission, Between takes, Awfully quiet, Probably sleeping, Radio silence, and Check the transmitter.
+- DHH's head and paper jaw animate only while the latest transmission is no more than 15 minutes old.
 - Pulsing unread indicator for transmissions that have arrived since the panel was last opened.
 - Smooth wheel, touchpad, and drag scrolling through the transmission feed.
 - Feed filters for all transmissions, posts, and replies.

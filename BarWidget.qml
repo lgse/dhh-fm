@@ -8,11 +8,15 @@ BarWidget {
   id: root
   moduleName: "lgse.dhh-fm"
 
+  property double nowMs: Date.now()
   readonly property var radioService: bar && bar.shell ? bar.shell.serviceFor("lgse.dhh-fm") : null
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
   readonly property bool connected: radioService ? radioService.connected : false
-  readonly property int activityLevel: root.connected ? Model.activityLevel(radioService.stats.total) : 0
+  readonly property var stationState: root.connected
+    ? Model.broadcastState(radioService ? radioService.lastCreatedAt : "", nowMs)
+    : ({ key: "offline", label: "Offline", onAir: false, ageMinutes: -1 })
+  readonly property int activityLevel: root.connected && stationState.onAir ? 3 : 0
 
   function open() { if (panelLoader.item) panelLoader.item.open() }
   function close() { if (panelLoader.item) panelLoader.item.close() }
@@ -29,6 +33,13 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+
+  Timer {
+    interval: 60000
+    repeat: true
+    running: true
+    onTriggered: root.nowMs = Date.now()
+  }
   onBarChanged: injectPanel()
   onRadioServiceChanged: injectPanel()
 
@@ -73,7 +84,7 @@ BarWidget {
         root.bar.showTooltip(root, !root.connected ? "Connect DHH FM"
           : (unread > 0
             ? unread + (unread === 1 ? " unheard transmission" : " unheard transmissions")
-            : Model.statusLine(root.radioService.stats, root.radioService.lastCreatedAt)))
+            : Model.stateSummary(root.radioService.lastCreatedAt)))
       }
       onExited: if (root.bar) root.bar.hideTooltip(root)
     }

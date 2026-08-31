@@ -36,3 +36,15 @@ test('maps activity to animation levels', () => {
   assert.equal(context.activityLevel(8), 2)
   assert.equal(context.activityLevel(24), 3)
 })
+
+test('changes station state as the last transmission ages', () => {
+  const now = Date.parse('2026-03-18T12:00:00Z')
+  const minutesAgo = minutes => new Date(now - minutes * 60000).toISOString()
+  assert.equal(context.broadcastState(minutesAgo(15), now).key, 'on-air')
+  assert.equal(context.broadcastState(minutesAgo(16), now).key, 'intermission')
+  assert.equal(context.broadcastState(minutesAgo(120), now).key, 'between-takes')
+  assert.equal(context.broadcastState(minutesAgo(240), now).key, 'quiet')
+  assert.equal(context.broadcastState(minutesAgo(600), now).key, 'sleeping')
+  assert.equal(context.broadcastState(minutesAgo(900), now).key, 'radio-silence')
+  assert.equal(context.broadcastState(minutesAgo(1500), now).key, 'transmitter')
+})
