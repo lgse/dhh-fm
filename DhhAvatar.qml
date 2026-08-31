@@ -10,7 +10,9 @@ Item {
   property int activityLevel: 0
   property int unreadCount: 0
   property bool animated: true
-  readonly property bool talking: animated && activityLevel > 0
+  property bool previewTalking: false
+  property bool locked: false
+  readonly property bool talking: animated && (activityLevel > 0 || previewTalking)
 
   implicitWidth: 72
   implicitHeight: 72
@@ -165,8 +167,16 @@ Item {
     width: parent.width * 0.22
     height: width
     radius: width / 2
-    color: root.activityLevel > 0 ? root.accent : "#777777"
+    color: root.locked ? "#777777" : (root.activityLevel > 0 ? root.accent : "#777777")
     border.width: Math.max(1, width * 0.12)
     border.color: root.background
+
+    Text {
+      anchors.centerIn: parent
+      visible: root.locked && parent.width >= 10
+      text: "󰌾"
+      color: root.foreground
+      font.pixelSize: parent.width * 0.58
+    }
   }
 }

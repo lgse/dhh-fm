@@ -54,16 +54,8 @@ BarWidget {
       background: root.bar ? root.bar.background : "#151515"
       activityLevel: root.activityLevel
       unreadCount: root.connected ? root.radioService.unreadCount : 0
-      visible: root.connected
-    }
-
-    Text {
-      anchors.centerIn: parent
-      visible: !root.connected
-      text: "󰌾"
-      color: root.bar ? root.bar.foreground : "white"
-      font.family: root.bar ? root.bar.fontFamily : "monospace"
-      font.pixelSize: Style.font.body
+      locked: !root.connected
+      visible: true
     }
 
     MouseArea {

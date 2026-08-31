@@ -95,7 +95,9 @@ Panel {
             background: Color.background
             activityLevel: root.activityLevel
             unreadCount: root.radioService ? root.radioService.unreadCount : 0
-            visible: root.connected
+            previewTalking: !root.connected
+            locked: !root.connected
+            visible: true
           }
 
           Column {
