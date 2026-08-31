@@ -55,6 +55,7 @@ BarWidget {
       activityLevel: root.activityLevel
       unreadCount: root.connected ? root.radioService.unreadCount : 0
       locked: !root.connected
+      showRing: false
       visible: true
     }
 

@@ -11,6 +11,7 @@ Item {
   property int unreadCount: 0
   property bool animated: true
   property bool locked: false
+  property bool showRing: true
   readonly property bool talking: animated && !locked && activityLevel > 0
 
   implicitWidth: 72
@@ -33,6 +34,7 @@ Item {
     border.width: Math.max(1, width * 0.035)
     border.color: root.activityLevel > 0 ? root.accent : Util.alpha(root.foreground, 0.25)
     opacity: 0.85
+    visible: root.showRing
 
     SequentialAnimation on scale {
       running: root.talking
