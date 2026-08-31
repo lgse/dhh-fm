@@ -273,7 +273,7 @@ def seen_at() -> str:
     return str(state.get("seen_at", "")) if isinstance(state, dict) else ""
 
 
-def empty_snapshot(message: str = "Choose a data source to begin broadcasting") -> dict:
+def empty_snapshot(message: str = "Connect with a valid X API bearer token to unlock DHH FM") -> dict:
     return {
         "username": USERNAME,
         "source": "unconfigured",
