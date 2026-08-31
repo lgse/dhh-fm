@@ -70,7 +70,9 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(530))
-    contentHeight: panel.fittedContentHeight(Style.space(700))
+    contentHeight: panel.fittedContentHeight(root.connected
+      ? Style.space(700)
+      : content.implicitHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -80,6 +82,7 @@ Panel {
       onMoveRequested: function(dx, dy) { if (dy !== 0) root.scrollPanel(dy * Style.space(70)) }
 
       Column {
+        id: content
         anchors.fill: parent
         spacing: Style.space(10)
 
