@@ -141,12 +141,31 @@ Item {
     border.width: Math.max(1, width * 0.12)
     border.color: root.background
 
-    Text {
+    Item {
       anchors.centerIn: parent
-      visible: root.locked && parent.width >= 10
-      text: "󰌾"
-      color: root.foreground
-      font.pixelSize: parent.width * 0.58
+      width: parent.width * 0.56
+      height: parent.height * 0.62
+      visible: root.locked && parent.width >= 8
+
+      Rectangle {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 0
+        width: parent.width * 0.64
+        height: parent.height * 0.58
+        radius: width / 2
+        color: "transparent"
+        border.width: Math.max(1, parent.width * 0.1)
+        border.color: root.foreground
+      }
+
+      Rectangle {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: parent.height * 0.58
+        radius: Math.max(1, width * 0.12)
+        color: root.foreground
+      }
     }
   }
 }
