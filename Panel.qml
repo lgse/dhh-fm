@@ -23,7 +23,7 @@ Panel {
   readonly property var stats: radioService ? radioService.stats : ({})
   readonly property var posts: radioService ? radioService.posts : []
   readonly property var visiblePosts: Model.filteredPosts(posts, feedFilter)
-  readonly property int activityLevel: Model.activityLevel(stats.total)
+  readonly property int activityLevel: root.connected ? Model.activityLevel(stats.total) : 0
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
@@ -98,7 +98,6 @@ Panel {
             background: Color.background
             activityLevel: root.activityLevel
             unreadCount: root.radioService ? root.radioService.unreadCount : 0
-            previewTalking: !root.connected
             locked: !root.connected
             visible: true
           }

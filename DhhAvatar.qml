@@ -10,9 +10,8 @@ Item {
   property int activityLevel: 0
   property int unreadCount: 0
   property bool animated: true
-  property bool previewTalking: false
   property bool locked: false
-  readonly property bool talking: animated && (activityLevel > 0 || previewTalking)
+  readonly property bool talking: animated && !locked && activityLevel > 0
 
   implicitWidth: 72
   implicitHeight: 72
@@ -109,35 +108,6 @@ Item {
         NumberAnimation { from: 0.22; to: 0.72; duration: 110 }
         NumberAnimation { from: 0.72; to: 0.16; duration: 130 }
         PauseAnimation { duration: 260 }
-      }
-    }
-  }
-
-  Row {
-    anchors.horizontalCenter: parent.horizontalCenter
-    anchors.bottom: parent.bottom
-    anchors.bottomMargin: parent.height * 0.01
-    spacing: Math.max(1, parent.width * 0.025)
-    visible: root.talking
-
-    Repeater {
-      model: 3
-      Rectangle {
-        required property int index
-        width: Math.max(1, root.width * 0.035)
-        height: root.height * (0.08 + index * 0.025)
-        radius: width / 2
-        color: root.accent
-        anchors.verticalCenter: parent.verticalCenter
-
-        SequentialAnimation on scale {
-          running: root.talking
-          loops: Animation.Infinite
-          PauseAnimation { duration: index * 80 }
-          NumberAnimation { from: 0.55; to: 1.35; duration: 180 }
-          NumberAnimation { from: 1.35; to: 0.55; duration: 230 }
-          PauseAnimation { duration: (2 - index) * 80 }
-        }
       }
     }
   }
