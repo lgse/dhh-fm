@@ -11,7 +11,9 @@ DHH FM puts David Heinemeier Hansson's public X activity in the Omarchy Quattro 
 - Recognizable DHH cutout with a subtle head turn and South Park-style talking mouth.
 - Animated ON AIR ring and dead-air states.
 - Pulsing unread indicator for transmissions that have arrived since the panel was last opened.
+- Smooth wheel, touchpad, and drag scrolling through the transmission feed.
 - Feed filters for all transmissions, posts, and replies.
+- Threaded reply timeline showing the original author, post, timestamp, and DHH's response.
 - Rolling 24-hour post and reply counts.
 - Public engagement and view totals when the source supplies them.
 - Open a transmission, launch X's reply composer, or copy its link.

@@ -61,10 +61,15 @@ class HelperTests(unittest.TestCase):
             "referenced_tweets": [{"type": "replied_to", "id": "40"}],
             "public_metrics": {"like_count": 7, "reply_count": 2, "impression_count": 90},
         }
-        normalized = dhh_fm.normalize_x_tweet(tweet, {})
+        included = {"40": {"id": "40", "text": "Original thought", "created_at": "2026-03-18T10:55:00Z", "author_id": "7"}}
+        users = {"7": {"name": "Someone", "username": "someone"}}
+        normalized = dhh_fm.normalize_x_tweet(tweet, included, users)
         self.assertEqual(normalized["kind"], "reply")
         self.assertEqual(normalized["url"], "https://x.com/dhh/status/42")
         self.assertEqual(normalized["metrics"]["views"], 90)
+        self.assertEqual(normalized["reply_to"]["text"], "Original thought")
+        self.assertEqual(normalized["reply_to"]["author_username"], "someone")
+        self.assertEqual(normalized["reply_to"]["url"], "https://x.com/someone/status/40")
 
 
 if __name__ == "__main__":

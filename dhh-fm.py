@@ -106,10 +106,22 @@ def public_metrics(raw: dict) -> dict:
     }
 
 
-def normalize_x_tweet(tweet: dict, included_tweets: dict) -> dict:
+def normalize_x_tweet(tweet: dict, included_tweets: dict, included_users: dict | None = None) -> dict:
+    included_users = included_users or {}
     references = tweet.get("referenced_tweets") or []
     reply_reference = next((item for item in references if item.get("type") == "replied_to"), None)
     context = included_tweets.get(str(reply_reference.get("id"))) if reply_reference else None
+    context_author = included_users.get(str((context or {}).get("author_id", "")), {})
+    context_id = str((context or {}).get("id", ""))
+    context_username = str(context_author.get("username", ""))
+    reply_to = {
+        "id": context_id,
+        "text": str((context or {}).get("text", "")).strip(),
+        "created_at": str((context or {}).get("created_at", "")),
+        "author_name": str(context_author.get("name", "")),
+        "author_username": context_username,
+        "url": f"https://x.com/{context_username}/status/{context_id}" if context_username and context_id else "",
+    } if reply_reference else {}
     tweet_id = str(tweet.get("id", ""))
     return {
         "id": tweet_id,
@@ -117,7 +129,8 @@ def normalize_x_tweet(tweet: dict, included_tweets: dict) -> dict:
         "created_at": str(tweet.get("created_at", "")),
         "kind": classify_references(references),
         "url": f"https://x.com/{USERNAME}/status/{tweet_id}",
-        "reply_to_text": str((context or {}).get("text", "")).strip(),
+        "reply_to": reply_to,
+        "reply_to_text": reply_to.get("text", ""),
         "metrics": public_metrics(tweet.get("public_metrics") or {}),
     }
 
@@ -136,13 +149,16 @@ def fetch_x_api(config: dict) -> list[dict]:
 
     params = {
         "max_results": "100",
-        "tweet.fields": "created_at,public_metrics,referenced_tweets",
-        "expansions": "referenced_tweets.id",
+        "tweet.fields": "author_id,created_at,public_metrics,referenced_tweets",
+        "expansions": "referenced_tweets.id,referenced_tweets.id.author_id",
+        "user.fields": "name,username",
     }
     url = f"{api_base}/users/{user_id}/tweets?{urllib.parse.urlencode(params)}"
     payload = request_json(url, token)
-    included = {str(item.get("id")): item for item in (payload.get("includes") or {}).get("tweets", [])}
-    return [normalize_x_tweet(tweet, included) for tweet in payload.get("data", [])]
+    included_payload = payload.get("includes") or {}
+    included = {str(item.get("id")): item for item in included_payload.get("tweets", [])}
+    included_users = {str(item.get("id")): item for item in included_payload.get("users", [])}
+    return [normalize_x_tweet(tweet, included, included_users) for tweet in payload.get("data", [])]
 
 
 def clean_html(value: str) -> str:
@@ -190,6 +206,7 @@ def fetch_rss(config: dict) -> list[dict]:
             "created_at": created_at,
             "kind": classify_rss(title, description),
             "url": link,
+            "reply_to": {},
             "reply_to_text": "",
             "metrics": {"likes": 0, "replies": 0, "reposts": 0, "quotes": 0, "views": 0},
         })
@@ -209,7 +226,12 @@ def demo_posts() -> list[dict]:
         posts.append({
             "id": f"demo-{index}", "text": text,
             "created_at": isoformat(now - dt.timedelta(minutes=minutes)), "kind": kind,
-            "url": "https://x.com/dhh", "reply_to_text": "Demo conversation context" if kind == "reply" else "",
+            "url": "https://x.com/dhh",
+            "reply_to": ({"id": "demo-original", "text": "Demo conversation context",
+                           "created_at": isoformat(now - dt.timedelta(minutes=minutes + 4)),
+                           "author_name": "Original author", "author_username": "example",
+                           "url": "https://x.com/dhh"} if kind == "reply" else {}),
+            "reply_to_text": "Demo conversation context" if kind == "reply" else "",
             "metrics": {"likes": 37 * index, "replies": 3 * index, "reposts": 5 * index,
                         "quotes": index, "views": 3700 * index},
         })

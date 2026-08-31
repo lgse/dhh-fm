@@ -492,7 +492,17 @@ Panel {
           clip: true
           boundsBehavior: Flickable.StopAtBounds
           flickableDirection: Flickable.VerticalFlick
+          interactive: contentHeight > height
+          pixelAligned: true
           ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+          WheelHandler {
+            onWheel: function(event) {
+              if (event.angleDelta.y === 0) return
+              root.scrollPanel(event.angleDelta.y > 0 ? -Style.space(72) : Style.space(72))
+              event.accepted = true
+            }
+          }
 
           Column {
             id: feedColumn
@@ -543,10 +553,14 @@ Panel {
               Rectangle {
                 id: card
                 required property var modelData
+                readonly property var replyContext: modelData.reply_to || ({
+                  text: String(modelData.reply_to_text || ""),
+                  author_name: "", author_username: "", created_at: "", url: ""
+                })
                 width: feedColumn.width
                 height: cardContent.implicitHeight + Style.space(20)
                 radius: Style.cornerRadius
-                color: cardMouse.containsMouse ? Util.alpha(Color.foreground, 0.07) : Util.alpha(Color.foreground, 0.04)
+                color: cardHover.hovered ? Util.alpha(Color.foreground, 0.07) : Util.alpha(Color.foreground, 0.04)
                 border.width: 1
                 border.color: Util.alpha(Color.foreground, 0.1)
 
@@ -578,6 +592,7 @@ Panel {
 
                   Text {
                     width: parent.width
+                    visible: card.modelData.kind !== "reply"
                     text: String(card.modelData.text || "")
                     color: Color.foreground
                     font.family: root.contentFontFamily
@@ -585,16 +600,127 @@ Panel {
                     wrapMode: Text.Wrap
                   }
 
-                  Text {
+                  Row {
+                    id: threadRow
                     width: parent.width
-                    visible: String(card.modelData.reply_to_text || "") !== ""
-                    text: "↳ " + String(card.modelData.reply_to_text || "")
-                    color: Util.alpha(Color.foreground, 0.55)
-                    font.family: root.contentFontFamily
-                    font.pixelSize: Style.font.caption
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
+                    spacing: Style.space(8)
+                    visible: card.modelData.kind === "reply"
+
+                    Item {
+                      width: Style.space(18)
+                      height: threadContent.implicitHeight
+
+                      Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: Style.space(5)
+                        width: Style.space(7)
+                        height: width
+                        radius: width / 2
+                        color: Util.alpha(Color.foreground, 0.58)
+                      }
+
+                      Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: Style.space(14)
+                        width: Math.max(1, Style.space(1))
+                        height: Math.max(0, parent.height - Style.space(27))
+                        color: Util.alpha(Color.foreground, 0.22)
+                      }
+
+                      Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: Style.space(5)
+                        width: Style.space(8)
+                        height: width
+                        radius: width / 2
+                        color: Color.accent
+                      }
+                    }
+
+                    Column {
+                      id: threadContent
+                      width: threadRow.width - Style.space(26)
+                      spacing: Style.space(9)
+
+                      Rectangle {
+                        width: parent.width
+                        height: originalContent.implicitHeight + Style.space(16)
+                        radius: Style.cornerRadius
+                        color: Util.alpha(Color.foreground, 0.045)
+                        border.width: 1
+                        border.color: Util.alpha(Color.foreground, 0.1)
+
+                        Column {
+                          id: originalContent
+                          x: Style.space(8)
+                          y: Style.space(8)
+                          width: parent.width - Style.space(16)
+                          spacing: Style.space(3)
+
+                          Row {
+                            width: parent.width
+                            spacing: Style.space(6)
+                            Text {
+                              width: parent.width - originalTime.width - Style.space(6)
+                              text: {
+                                var name = String(card.replyContext.author_name || "Original post")
+                                var username = String(card.replyContext.author_username || "")
+                                return username ? name + "  @" + username : name
+                              }
+                              color: Util.alpha(Color.foreground, 0.7)
+                              font.family: root.contentFontFamily
+                              font.pixelSize: Style.font.caption
+                              font.bold: true
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              id: originalTime
+                              text: card.replyContext.created_at
+                                ? Model.relativeTime(card.replyContext.created_at, root.nowMs) : ""
+                              color: Util.alpha(Color.foreground, 0.42)
+                              font.family: root.contentFontFamily
+                              font.pixelSize: Style.font.caption
+                            }
+                          }
+
+                          Text {
+                            width: parent.width
+                            text: String(card.replyContext.text || "Original post unavailable")
+                            color: Util.alpha(Color.foreground, 0.72)
+                            font.family: root.contentFontFamily
+                            font.pixelSize: Style.font.body
+                            wrapMode: Text.Wrap
+                          }
+                        }
+
+                        TapHandler {
+                          enabled: String(card.replyContext.url || "") !== ""
+                          gesturePolicy: TapHandler.ReleaseWithinBounds
+                          onTapped: if (root.radioService) root.radioService.openUrl(card.replyContext.url)
+                        }
+                      }
+
+                      Column {
+                        width: parent.width
+                        spacing: Style.space(3)
+                        Text {
+                          text: "DHH  @dhh"
+                          color: Color.accent
+                          font.family: root.contentFontFamily
+                          font.pixelSize: Style.font.caption
+                          font.bold: true
+                        }
+                        Text {
+                          width: parent.width
+                          text: String(card.modelData.text || "")
+                          color: Color.foreground
+                          font.family: root.contentFontFamily
+                          font.pixelSize: Style.font.body
+                          wrapMode: Text.Wrap
+                        }
+                      }
+                    }
                   }
 
                   Row {
@@ -635,15 +761,14 @@ Panel {
                   }
                 }
 
-                MouseArea {
-                  id: cardMouse
-                  anchors.fill: parent
-                  acceptedButtons: Qt.LeftButton
-                  hoverEnabled: true
+                HoverHandler {
+                  id: cardHover
                   cursorShape: Qt.PointingHandCursor
-                  propagateComposedEvents: true
-                  z: -1
-                  onClicked: if (root.radioService) root.radioService.openUrl(card.modelData.url)
+                }
+
+                TapHandler {
+                  gesturePolicy: TapHandler.ReleaseWithinBounds
+                  onTapped: if (root.radioService) root.radioService.openUrl(card.modelData.url)
                 }
               }
             }
