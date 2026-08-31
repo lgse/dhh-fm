@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "lgse.dhh-fm",
+  "name": "DHH FM",
+  "version": "0.1.0",
+  "author": "Pierre Berube",
+  "license": "MIT",
+  "description": "DHH activity, statistics, and transmissions from the Omarchy bar.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "DHH FM",
+    "description": "DHH is always broadcasting",
+    "category": "Info",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
