@@ -16,6 +16,13 @@ Item {
   implicitWidth: 72
   implicitHeight: 72
 
+  onTalkingChanged: {
+    if (!talking) {
+      lowerJaw.rotation = 0
+      lowerJaw.y = head.mouthCut
+    }
+  }
+
   Rectangle {
     id: signalRing
     anchors.centerIn: parent
@@ -67,47 +74,78 @@ Item {
       NumberAnimation { from: 1.012; to: 0.985; duration: 1240; easing.type: Easing.InOutSine }
     }
 
-    Image {
-      anchors.fill: parent
-      source: Qt.resolvedUrl("assets/dhh-cutout.png")
-      fillMode: Image.PreserveAspectFit
-      asynchronous: true
-      cache: true
-      smooth: true
+    readonly property real mouthCut: height * 0.705
+
+    // Split the portrait at the mouth like a paper cutout. The upper portrait
+    // stays fixed while the lower jaw tilts around the cut line.
+    Item {
+      id: upperHead
+      x: 0
+      y: 0
+      width: parent.width
+      height: head.mouthCut
+      clip: true
+
+      Image {
+        width: head.width
+        height: head.height
+        source: Qt.resolvedUrl("assets/dhh-cutout.png")
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        cache: true
+        smooth: true
+      }
     }
 
-    // A deliberately simple South Park-style mouth laid over the portrait.
-    // At bar size it reads as speech; in the panel the tiny jaw flap is visible.
     Rectangle {
-      id: mouth
       x: parent.width * 0.39
-      y: parent.height * 0.695
+      y: head.mouthCut - parent.height * 0.008
       width: parent.width * 0.22
-      height: parent.height * 0.075
+      height: parent.height * 0.045
       radius: width / 2
       color: root.background
-      transformOrigin: Item.Top
       visible: root.talking
+    }
 
-      Rectangle {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        width: parent.width * 0.72
-        height: parent.height * 0.27
-        radius: height / 2
-        color: root.foreground
+    Item {
+      id: lowerJaw
+      x: 0
+      y: head.mouthCut
+      width: parent.width
+      height: parent.height - head.mouthCut
+      clip: true
+      transformOrigin: Item.TopLeft
+
+      Image {
+        x: 0
+        y: -head.mouthCut
+        width: head.width
+        height: head.height
+        source: Qt.resolvedUrl("assets/dhh-cutout.png")
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        cache: true
+        smooth: true
       }
 
-      SequentialAnimation on scale {
+      SequentialAnimation on rotation {
         running: root.talking
         loops: Animation.Infinite
-        NumberAnimation { from: 0.16; to: 1.0; duration: 150; easing.type: Easing.OutQuad }
-        PauseAnimation { duration: 70 }
-        NumberAnimation { from: 1.0; to: 0.22; duration: 120; easing.type: Easing.InQuad }
-        PauseAnimation { duration: 180 }
-        NumberAnimation { from: 0.22; to: 0.72; duration: 110 }
-        NumberAnimation { from: 0.72; to: 0.16; duration: 130 }
+        NumberAnimation { from: 0; to: 2.8; duration: 125; easing.type: Easing.OutQuad }
+        PauseAnimation { duration: 65 }
+        NumberAnimation { from: 2.8; to: -1.7; duration: 145; easing.type: Easing.InOutQuad }
+        NumberAnimation { from: -1.7; to: 2.1; duration: 120; easing.type: Easing.InOutQuad }
+        PauseAnimation { duration: 85 }
+        NumberAnimation { from: 2.1; to: 0; duration: 150; easing.type: Easing.InQuad }
         PauseAnimation { duration: 260 }
+      }
+
+      SequentialAnimation on y {
+        running: root.talking
+        loops: Animation.Infinite
+        NumberAnimation { from: head.mouthCut; to: head.mouthCut + head.height * 0.018; duration: 125 }
+        NumberAnimation { from: head.mouthCut + head.height * 0.018; to: head.mouthCut; duration: 210 }
+        PauseAnimation { duration: 610 }
       }
     }
   }

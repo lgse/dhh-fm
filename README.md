@@ -8,7 +8,7 @@ DHH FM puts David Heinemeier Hansson's public X activity in the Omarchy Quattro 
 
 ## Features
 
-- Recognizable DHH cutout with a subtle head turn and South Park-style talking mouth.
+- Recognizable DHH cutout with a subtle head turn and hinged South Park-style paper jaw.
 - Animated ON AIR ring and dead-air states.
 - Pulsing unread indicator for transmissions that have arrived since the panel was last opened.
 - Smooth wheel, touchpad, and drag scrolling through the transmission feed.

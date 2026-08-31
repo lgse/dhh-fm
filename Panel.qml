@@ -17,6 +17,7 @@ Panel {
   property string setupSource: "x-api"
   property bool configEditorOpen: false
   property double nowMs: Date.now()
+  property real wheelTargetY: 0
 
   readonly property var barIdentity: hostWidget || root
   readonly property bool connected: radioService ? radioService.connected : false
@@ -36,8 +37,13 @@ Panel {
     return false
   }
   function scrollPanel(delta) {
-    feedFlick.contentY = Math.max(0, Math.min(feedFlick.contentY + delta,
-      Math.max(0, feedFlick.contentHeight - feedFlick.height)))
+    var maximum = Math.max(0, feedFlick.contentHeight - feedFlick.height)
+    if (!wheelScroll.running) root.wheelTargetY = feedFlick.contentY
+    root.wheelTargetY = Math.max(0, Math.min(root.wheelTargetY + delta, maximum))
+    wheelScroll.stop()
+    wheelScroll.from = feedFlick.contentY
+    wheelScroll.to = root.wheelTargetY
+    wheelScroll.start()
   }
 
   function saveConfiguration() {
@@ -60,6 +66,14 @@ Panel {
     } else {
       configEditorOpen = true
     }
+  }
+
+  NumberAnimation {
+    id: wheelScroll
+    target: feedFlick
+    property: "contentY"
+    duration: 135
+    easing.type: Easing.OutCubic
   }
 
   Timer {
@@ -86,7 +100,7 @@ Panel {
       anchors.fill: parent
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
-      onMoveRequested: function(dx, dy) { if (dy !== 0) root.scrollPanel(dy * Style.space(70)) }
+      onMoveRequested: function(dx, dy) { if (dy !== 0) root.scrollPanel(dy * Style.space(180)) }
 
       Column {
         id: content
@@ -498,8 +512,13 @@ Panel {
 
           WheelHandler {
             onWheel: function(event) {
-              if (event.angleDelta.y === 0) return
-              root.scrollPanel(event.angleDelta.y > 0 ? -Style.space(72) : Style.space(72))
+              var pixelY = event.pixelDelta ? event.pixelDelta.y : 0
+              if (pixelY !== 0)
+                root.scrollPanel(-pixelY * 2.6)
+              else if (event.angleDelta.y !== 0)
+                root.scrollPanel(event.angleDelta.y > 0 ? -Style.space(220) : Style.space(220))
+              else
+                return
               event.accepted = true
             }
           }
